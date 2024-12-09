@@ -17,12 +17,12 @@ import (
 
 // Metric represents the structure of a metric to be exported.
 type Metric struct {
-	System    string
-	Subsystem string
-	Name      string
-	Service   string
-	Component string
-	Value     float64
+	Component            string
+	ProcessName          string
+	ApplicationName      string
+	Env                  string
+	DomainName           string
+	Value                float64
 }
 
 // GetArgs retrieves command line arguments for script execution.
@@ -59,7 +59,7 @@ func StringToDuration(s string) time.Duration {
 func CheckCmdOutput(fields []string) {
 	if len(fields) != 6 {
 		log.Fatal(`ERROR: Custom script output must have exactly six fields:
-hostname, instance, metric_name, service_name, component_name, metric_value`)
+component, process_name, application_name, env, domain_name, metric_value`)
 	}
 }
 
@@ -89,12 +89,12 @@ func ExecuteCommand(script string) ([]Metric, error) {
 		}
 
 		metrics = append(metrics, Metric{
-			System:    strings.TrimSpace(fields[0]),
-			Subsystem: strings.TrimSpace(fields[1]),
-			Name:      strings.TrimSpace(fields[2]),
-			Service:   strings.TrimSpace(fields[3]),
-			Component: strings.TrimSpace(fields[4]),
-			Value:     value,
+			Component:          strings.TrimSpace(fields[0]),
+			ProcessName:        strings.TrimSpace(fields[1]),
+			ApplicationName:    strings.TrimSpace(fields[2]),
+			Env:                strings.TrimSpace(fields[3]),
+			DomainName:         strings.TrimSpace(fields[4]),
+			Value:              value,
 		})
 	}
 
@@ -121,11 +121,11 @@ func UpdateMetrics(script string, gauge *prometheus.GaugeVec, timeout time.Durat
         // Update Prometheus metrics
         for _, metric := range metrics {
             gauge.With(prometheus.Labels{
-                "system":    metric.System,
-                "subsystem": metric.Subsystem,
-                "metric":    metric.Name,
-                "service":   metric.Service,
-                "component": metric.Component,
+                "component":           metric.Component,
+                "process_name":        metric.ProcessName,
+                "application_name":    metric.ApplicationName,
+                "env":                 metric.Env,
+                "domain_name":         metric.DomainName,
             }).Set(metric.Value)
         }
 
@@ -146,7 +146,7 @@ func main() {
 			Namespace: "prom",
 			Subsystem: "custom",
 		},
-        []string{"system", "subsystem", "metric", "service", "component"},
+        []string{"component", "process_name", "application_name", "env", "domain_name"},
     )
 
 	prometheus.MustRegister(gauge)
@@ -159,3 +159,4 @@ func main() {
 	    log.Fatalf("Failed to start server: %v", err)
     }
 }
+
