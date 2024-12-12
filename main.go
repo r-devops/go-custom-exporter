@@ -58,7 +58,7 @@ func StringToDuration(s string) time.Duration {
 
 // CheckCmdOutput validates the output of the custom script.
 func CheckCmdOutput(fields []string) {
-	if len(fields) != 6 {
+	if len(fields) != 7 {
 		log.Fatal(`ERROR: Custom script output must have exactly six fields:
 component, process_name, application_name, env, domain_name, mon_type, metric_value`)
 	}
