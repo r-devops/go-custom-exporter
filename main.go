@@ -17,12 +17,13 @@ import (
 
 // Metric represents the structure of a metric to be exported.
 type Metric struct {
-	Component            string
-	ProcessName          string
-	ApplicationName      string
-	Env                  string
-	DomainName           string
-	Value                float64
+	Component       string
+	ProcessName     string
+	ApplicationName string
+	Env             string
+	DomainName      string
+	MonType         string
+	Value           float64
 }
 
 // GetArgs retrieves command line arguments for script execution.
@@ -59,7 +60,7 @@ func StringToDuration(s string) time.Duration {
 func CheckCmdOutput(fields []string) {
 	if len(fields) != 6 {
 		log.Fatal(`ERROR: Custom script output must have exactly six fields:
-component, process_name, application_name, env, domain_name, metric_value`)
+component, process_name, application_name, env, domain_name, mon_type, metric_value`)
 	}
 }
 
@@ -89,12 +90,13 @@ func ExecuteCommand(script string) ([]Metric, error) {
 		}
 
 		metrics = append(metrics, Metric{
-			Component:          strings.TrimSpace(fields[0]),
-			ProcessName:        strings.TrimSpace(fields[1]),
-			ApplicationName:    strings.TrimSpace(fields[2]),
-			Env:                strings.TrimSpace(fields[3]),
-			DomainName:         strings.TrimSpace(fields[4]),
-			Value:              value,
+			Component:       strings.TrimSpace(fields[0]),
+			ProcessName:     strings.TrimSpace(fields[1]),
+			ApplicationName: strings.TrimSpace(fields[2]),
+			Env:             strings.TrimSpace(fields[3]),
+			DomainName:      strings.TrimSpace(fields[4]),
+			MonType:         strings.TrimSpace(fields[5]),
+			Value:           value,
 		})
 	}
 
@@ -115,23 +117,24 @@ func UpdateMetrics(script string, gauge *prometheus.GaugeVec, timeout time.Durat
 			continue
 		}
 
-        // Reset gauge values before updating
-        gauge.Reset()
+		// Reset gauge values before updating
+		gauge.Reset()
 
-        // Update Prometheus metrics
-        for _, metric := range metrics {
-            gauge.With(prometheus.Labels{
-                "component":           metric.Component,
-                "process_name":        metric.ProcessName,
-                "application_name":    metric.ApplicationName,
-                "env":                 metric.Env,
-                "domain_name":         metric.DomainName,
-            }).Set(metric.Value)
-        }
+		// Update Prometheus metrics
+		for _, metric := range metrics {
+			gauge.With(prometheus.Labels{
+				"component":        metric.Component,
+				"process_name":     metric.ProcessName,
+				"application_name": metric.ApplicationName,
+				"env":              metric.Env,
+				"domain_name":      metric.DomainName,
+				"mon_type":         metric.MonType,
+			}).Set(metric.Value)
+		}
 
-        log.Println("Metrics updated successfully.")
-        time.Sleep(timeout) // Use the timeout value for sleep duration
-    }
+		log.Println("Metrics updated successfully.")
+		time.Sleep(timeout) // Use the timeout value for sleep duration
+	}
 }
 
 // Main function to set up the HTTP server and start metrics collection.
@@ -146,8 +149,8 @@ func main() {
 			Namespace: "prom",
 			Subsystem: "custom",
 		},
-        []string{"component", "process_name", "application_name", "env", "domain_name"},
-    )
+		[]string{"component", "process_name", "application_name", "env", "domain_name", "mon_type"},
+	)
 
 	prometheus.MustRegister(gauge)
 	http.Handle("/metrics", promhttp.Handler())
@@ -156,7 +159,6 @@ func main() {
 
 	log.Printf("Starting server on port %s...", port)
 	if err := http.ListenAndServe(port, nil); err != nil {
-	    log.Fatalf("Failed to start server: %v", err)
-    }
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
-
