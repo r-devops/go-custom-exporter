@@ -84,7 +84,7 @@ func ExecuteCommand(script string) ([]Metric, error) {
 		fields := strings.Split(line, ",")
 		CheckCmdOutput(fields)
 
-		value, err := strconv.ParseFloat(strings.TrimSpace(fields[5]), 64)
+		value, err := strconv.ParseFloat(strings.TrimSpace(fields[6]), 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid metric value: %v", err)
 		}
